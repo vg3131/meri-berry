@@ -1,30 +1,19 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { ApiRequestError } from "../../api/api";
-import {
-  type WeighInSubmissionResult,
-} from "../../types/farm";
+import { getFruitTypes, type CreateWeighInPayload } from "../../api/farmApi";
+import { type FruitType, type WeighInSubmissionResult } from "../../types/farm";
 
 type WeighProductFormProps = {
-  onRecordWeighIn: (
-    workerNumber: string,
-    weightKg: number,
-  ) => Promise<WeighInSubmissionResult>;
+  onRecordWeighIn: (payload: CreateWeighInPayload) => Promise<WeighInSubmissionResult>;
 };
 
 function mapWeighInError(error: unknown): string {
   if (error instanceof ApiRequestError) {
-    if (error.status === 404) {
-      return "Worker not found.";
-    }
-    if (error.status === 400) {
-      return "Invalid weight.";
-    }
-    if (error.status === 500) {
-      return "Server error / no rate configured.";
-    }
+    if (error.status === 404) return "Worker or fruit type not found.";
+    if (error.status === 400) return "Invalid weight.";
+    if (error.status === 500) return "Server error / no rate configured.";
     return error.message;
   }
-
   return "Unexpected error while saving weigh-in.";
 }
 
@@ -32,25 +21,32 @@ export function WeighProductForm({ onRecordWeighIn }: WeighProductFormProps) {
   const [weighForm, setWeighForm] = useState({
     workerNumber: "",
     weightKg: "",
+    fruitTypeId: "",
   });
+  const [fruitTypes, setFruitTypes] = useState<FruitType[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [weighErrors, setWeighErrors] = useState<string[]>([]);
   const [lastResult, setLastResult] = useState<WeighInSubmissionResult | null>(null);
+
+  useEffect(() => {
+    getFruitTypes()
+      .then(setFruitTypes)
+      .catch(() => {
+        // Non-fatal — form will show empty dropdown
+      });
+  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const workerNumber = weighForm.workerNumber.trim();
     const parsedWeight = Number(weighForm.weightKg);
+    const fruitTypeId = Number(weighForm.fruitTypeId);
     const errors: string[] = [];
 
-    if (!workerNumber) {
-      errors.push("Worker number is required.");
-    }
-
-    if (!Number.isFinite(parsedWeight) || parsedWeight <= 0) {
-      errors.push("Invalid weight.");
-    }
+    if (!workerNumber) errors.push("Worker number is required.");
+    if (!Number.isFinite(parsedWeight) || parsedWeight <= 0) errors.push("Invalid weight.");
+    if (!fruitTypeId) errors.push("Please select a fruit type.");
 
     if (errors.length > 0) {
       setWeighErrors(errors);
@@ -60,7 +56,7 @@ export function WeighProductForm({ onRecordWeighIn }: WeighProductFormProps) {
 
     setIsSubmitting(true);
     try {
-      const result = await onRecordWeighIn(workerNumber, parsedWeight);
+      const result = await onRecordWeighIn({ workerNumber, weightKg: parsedWeight, fruitTypeId });
       setLastResult(result);
       setWeighErrors([]);
     } catch (error) {
@@ -72,47 +68,66 @@ export function WeighProductForm({ onRecordWeighIn }: WeighProductFormProps) {
   };
 
   const clearForm = () => {
-    setWeighForm({ workerNumber: "", weightKg: "" });
+    setWeighForm({ workerNumber: "", weightKg: "", fruitTypeId: "" });
     setWeighErrors([]);
     setLastResult(null);
   };
+
+  const selectedFruitType = fruitTypes.find((ft) => ft.id === Number(weighForm.fruitTypeId));
 
   return (
     <section className="panel">
       <h2>Weigh Product Form</h2>
       <form className="form-grid" onSubmit={handleSubmit}>
         <label className="field">
-          <span>workerNumber</span>
+          <span>Worker Number</span>
           <input
             type="text"
             value={weighForm.workerNumber}
-            onChange={(event) =>
-              setWeighForm({
-                ...weighForm,
-                workerNumber: event.target.value,
-              })
-            }
+            onChange={(e) => setWeighForm({ ...weighForm, workerNumber: e.target.value })}
             placeholder="e.g. 101"
             required
+            disabled={isSubmitting}
           />
         </label>
 
         <label className="field">
-          <span>weightKg</span>
+          <span>Weight (Kg)</span>
           <input
             type="number"
             min="0.001"
             step="0.001"
             value={weighForm.weightKg}
-            onChange={(event) =>
-              setWeighForm({
-                ...weighForm,
-                weightKg: event.target.value,
-              })
-            }
+            onChange={(e) => setWeighForm({ ...weighForm, weightKg: e.target.value })}
             placeholder="e.g. 12.5"
             required
+            disabled={isSubmitting}
           />
+        </label>
+
+        <label className="field" style={{ gridColumn: "1 / -1" }}>
+          <span>Fruit Type</span>
+          <select
+            value={weighForm.fruitTypeId}
+            onChange={(e) => setWeighForm({ ...weighForm, fruitTypeId: e.target.value })}
+            required
+            disabled={isSubmitting}
+          >
+            <option value="">Select a fruit type…</option>
+            {fruitTypes.map((ft) => (
+              <option key={ft.id} value={ft.id}>
+                {ft.name}
+                {ft.centsPerkKg != null
+                  ? ` — ${ft.currencyCode ?? ""} ${(ft.centsPerkKg / 100).toFixed(2)}/kg`
+                  : ""}
+              </option>
+            ))}
+          </select>
+          {selectedFruitType?.centsPerkKg != null && (
+            <span style={{ fontSize: "0.85rem", color: "#9f52e2", marginTop: "0.25rem" }}>
+              Rate: {selectedFruitType.currencyCode ?? ""} {(selectedFruitType.centsPerkKg / 100).toFixed(2)} per kg
+            </span>
+          )}
         </label>
 
         <div className="button-row">
@@ -138,27 +153,24 @@ export function WeighProductForm({ onRecordWeighIn }: WeighProductFormProps) {
         </div>
       )}
 
-      <p className="validation-hint">
-        Validation messages: worker not found, invalid weight, server error / no rate
-        configured.
-      </p>
-
       {lastResult && (
         <div className="result-stack">
           <section className="result-card">
             <h3>Weigh-In Result</h3>
             <dl className="result-grid">
-              <dt>weighIn.id</dt>
+              <dt>Weigh In ID</dt>
               <dd>{lastResult.weighIn.id}</dd>
-              <dt>weighIn.workerNumber</dt>
+              <dt>Worker Number</dt>
               <dd>{lastResult.weighIn.workerNumber}</dd>
-              <dt>weighIn.weightKg</dt>
+              <dt>Fruit Type</dt>
+              <dd>{lastResult.weighIn.fruitType}</dd>
+              <dt>Weight (Kg)</dt>
               <dd>{lastResult.weighIn.weightKg}</dd>
-              <dt>weighIn.earnedCents</dt>
+              <dt>Earned Cents</dt>
               <dd>{lastResult.weighIn.earnedCents}</dd>
-              <dt>weighIn.currencyCode</dt>
+              <dt>Currency Code</dt>
               <dd>{lastResult.weighIn.currencyCode}</dd>
-              <dt>weighIn.recordedAt</dt>
+              <dt>Recorded At</dt>
               <dd>{lastResult.weighIn.recordedAt}</dd>
             </dl>
           </section>
@@ -166,13 +178,13 @@ export function WeighProductForm({ onRecordWeighIn }: WeighProductFormProps) {
           <section className="result-card">
             <h3>Updated Summary</h3>
             <dl className="result-grid">
-              <dt>totalWeightGrams</dt>
+              <dt>Total Weight (grams)</dt>
               <dd>{lastResult.workerSummary.totalWeightGrams}</dd>
-              <dt>totalEarnedCents</dt>
+              <dt>Total Earned Cents</dt>
               <dd>{lastResult.workerSummary.totalEarnedCents}</dd>
-              <dt>totalPaidCents</dt>
+              <dt>Total Paid Cents</dt>
               <dd>{lastResult.workerSummary.totalPaidCents}</dd>
-              <dt>outstandingCents</dt>
+              <dt>Outstanding Cents</dt>
               <dd>{lastResult.workerSummary.outstandingCents}</dd>
             </dl>
           </section>

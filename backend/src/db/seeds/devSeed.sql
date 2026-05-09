@@ -10,27 +10,44 @@ INSERT INTO workers (worker_number, name) VALUES
   ('101', 'Sample Worker'),
   ('102', 'Second Worker');
 
-INSERT INTO rates (cents_per_kg, currency_code, effective_from)
+-- Seed fruit types with per-type rates
+INSERT INTO fruit_types (name) VALUES
+  ('Strawberry'),
+  ('Blueberry'),
+  ('Raspberry')
+ON CONFLICT(name) DO NOTHING;
+
+INSERT INTO rates (fruit_type_id, cents_per_kg, currency_code, effective_from)
 SELECT
-  350,
-  currency_code,
+  ft.id,
+  r.cents_per_kg,
+  ac.currency_code,
   strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-FROM app_config
-WHERE id = 1;
+FROM (VALUES
+  ('Strawberry', 350),
+  ('Blueberry',  500),
+  ('Raspberry',  450)
+) AS r(name, cents_per_kg)
+JOIN fruit_types ft ON ft.name = r.name
+JOIN app_config ac ON ac.id = 1;
 
 INSERT INTO weigh_ins (
   worker_number,
   weight_grams,
   rate_cents_per_kg_snapshot,
-  currency_code_snapshot
+  currency_code_snapshot,
+  fruit_type_id
 )
 SELECT
   '101',
   22400,
-  cents_per_kg,
-  currency_code
-FROM rates
-ORDER BY effective_from DESC, id DESC
+  r.cents_per_kg,
+  r.currency_code,
+  r.fruit_type_id
+FROM rates r
+JOIN fruit_types ft ON ft.id = r.fruit_type_id
+WHERE ft.name = 'Strawberry'
+ORDER BY r.effective_from DESC, r.id DESC
 LIMIT 1;
 
 INSERT INTO payments (worker_number, amount_cents, currency_code_snapshot, note)

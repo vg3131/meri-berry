@@ -5,7 +5,7 @@
 
 .top-nav {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   border-top: 1px solid #d8d8df;
   border-bottom: 1px solid #d8d8df;
   background: #f3f3f6;
@@ -101,6 +101,32 @@
   border-color: #9f52e2;
   outline: 2px solid rgba(159, 82, 226, 0.18);
   outline-offset: 0;
+}
+
+.field select {
+  border: 1px solid #c8ccda;
+  background: #ffffff;
+  color: #283143;
+  border-radius: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.95rem;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239f52e2' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.2rem;
+  cursor: pointer;
+}
+
+.field select:focus {
+  border-color: #9f52e2;
+  outline: 2px solid rgba(159, 82, 226, 0.18);
+  outline-offset: 0;
+}
+
+.field select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .button-row {
