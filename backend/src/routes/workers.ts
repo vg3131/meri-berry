@@ -1,13 +1,10 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { getWorker, getWorkerSummary, getLatestRate, insertPayment } from "../db/queries";
+import { getWorker, getWorkerSummary, insertPayment } from "../db/queries";
+import { gramsToKg } from "../utils/math";
 
 type WorkerParams = {
   workerNumber: string;
 };
-
-function gramsToKg(grams: number): number {
-  return Number((grams / 1000).toFixed(3));
-}
 
 async function sendWorkerSummary(
   request: FastifyRequest<{ Params: WorkerParams }>,
@@ -58,13 +55,10 @@ async function payWorker(
     return reply.code(422).send({ message: "Worker has no outstanding balance to pay" });
   }
 
-  const latestRate = getLatestRate();
-  const currencyCode = latestRate?.currency_code ?? "AUD";
-
   insertPayment({
     workerNumber,
     amountCents: outstandingCents,
-    currencyCodeSnapshot: currencyCode,
+    currencyCodeSnapshot: "AMD",
   });
 
   const updatedSummary = getWorkerSummary(workerNumber);

@@ -1,6 +1,8 @@
 /**
  * Route integration tests.
  *
+ * DATABASE_PATH=:memory: must be set before this module is loaded.
+ * The npm "test" script sets it automatically.
  * DATABASE_PATH=:memory: must be set in the environment (npm test does this).
  *
  * IMPORTANT: queries.ts calls db.prepare() at module load time, so the schema
@@ -12,6 +14,13 @@ import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { db } from "../db/client";
+import { buildApp } from "../app";
+
+// Apply both migration files to the in-memory DB before any test runs.
+function applyMigrations() {
+  const migrationsDir = path.resolve(__dirname, "../db/migrations");
+  const files = fs.readdirSync(migrationsDir).filter((f) => f.endsWith(".sql")).sort();
 import type { FastifyInstance } from "fastify";
 
 function applyMigrations(db: { exec: (sql: string) => void }) {
@@ -27,6 +36,10 @@ function applyMigrations(db: { exec: (sql: string) => void }) {
 }
 
 describe("Meri Berry API", () => {
+  let app: ReturnType<typeof buildApp>;
+
+  before(async () => {
+    applyMigrations();
   let app: FastifyInstance;
 
   before(async () => {
@@ -146,6 +159,7 @@ describe("Meri Berry API", () => {
       assert.strictEqual(res.statusCode, 404);
     });
 
+    it("returns 400 for invalid payload", async () => {
     it("returns 400 for an invalid payload", async () => {
       const res = await app.inject({
         method: "POST",

@@ -11,8 +11,8 @@ type Phase =
   | { kind: "paid"; result: PayWorkerResponse }
   | { kind: "error"; message: string };
 
-function centsToDisplay(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
+function amdToDisplay(amount: number): string {
+  return `֏${amount.toLocaleString()}`;
 }
 
 function mapError(error: unknown): string {
@@ -126,9 +126,9 @@ export function PayWorkerPanel() {
             <h3>Outstanding Balance</h3>
             <dl className="result-grid">
               <dt>totalEarned</dt>
-              <dd>{centsToDisplay(previewSummary.summary.totalEarnedCents)}</dd>
+              <dd>{amdToDisplay(previewSummary.summary.totalEarnedCents)}</dd>
               <dt>totalPaid</dt>
-              <dd>{centsToDisplay(previewSummary.summary.totalPaidCents)}</dd>
+              <dd>{amdToDisplay(previewSummary.summary.totalPaidCents)}</dd>
               <dt>outstanding</dt>
               <dd
                 style={{
@@ -136,7 +136,7 @@ export function PayWorkerPanel() {
                   fontWeight: 700,
                 }}
               >
-                {centsToDisplay(previewSummary.summary.outstandingCents)}
+                {amdToDisplay(previewSummary.summary.outstandingCents)}
               </dd>
             </dl>
           </section>
@@ -152,7 +152,7 @@ export function PayWorkerPanel() {
                 ? "Processing..."
                 : previewSummary.summary.outstandingCents === 0
                   ? "Nothing to Pay"
-                  : `Pay ${centsToDisplay(previewSummary.summary.outstandingCents)}`}
+                  : `Pay ${amdToDisplay(previewSummary.summary.outstandingCents)}`}
             </button>
           </div>
         </div>
@@ -171,7 +171,7 @@ export function PayWorkerPanel() {
           >
             <p>
               Payment of{" "}
-              <strong>{centsToDisplay(phase.result.payment.amountCents)}</strong> recorded
+              <strong>{amdToDisplay(phase.result.payment.amountCents)}</strong> recorded
               for worker <strong>{phase.result.payment.workerNumber}</strong>.
             </p>
           </div>
@@ -181,12 +181,12 @@ export function PayWorkerPanel() {
               <h3>Updated Summary</h3>
               <dl className="result-grid">
                 <dt>totalEarned</dt>
-                <dd>{centsToDisplay(phase.result.summary.totalEarnedCents)}</dd>
+                <dd>{amdToDisplay(phase.result.summary.totalEarnedCents)}</dd>
                 <dt>totalPaid</dt>
-                <dd>{centsToDisplay(phase.result.summary.totalPaidCents)}</dd>
+                <dd>{amdToDisplay(phase.result.summary.totalPaidCents)}</dd>
                 <dt>outstanding</dt>
                 <dd style={{ fontWeight: 700 }}>
-                  {centsToDisplay(phase.result.summary.outstandingCents)}
+                  {amdToDisplay(phase.result.summary.outstandingCents)}
                 </dd>
               </dl>
             </section>

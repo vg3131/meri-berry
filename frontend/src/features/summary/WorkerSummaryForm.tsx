@@ -114,16 +114,18 @@ export function WorkerSummaryForm({ onSearchWorkerSummary }: WorkerSummaryFormPr
           <section className="result-card">
             <h3>Summary</h3>
             <dl className="result-grid">
-              <dt>totalWeightGrams</dt>
-              <dd>{summaryResult.summary.totalWeightGrams}</dd>
-              <dt>totalWeightKg</dt>
-              <dd>{summaryResult.summary.totalWeightKg}</dd>
-              <dt>totalEarnedCents</dt>
-              <dd>{summaryResult.summary.totalEarnedCents}</dd>
-              <dt>totalPaidCents</dt>
-              <dd>{summaryResult.summary.totalPaidCents}</dd>
-              <dt>outstandingCents</dt>
-              <dd>{summaryResult.summary.outstandingCents}</dd>
+              <dt>Total Weight (g)</dt>
+              <dd>{summaryResult.summary.totalWeightGrams.toLocaleString()}</dd>
+              <dt>Total Weight (kg)</dt>
+              <dd>{summaryResult.summary.totalWeightKg.toLocaleString()}</dd>
+              <dt>Total Earned</dt>
+              <dd>֏{summaryResult.summary.totalEarnedCents.toLocaleString()}</dd>
+              <dt>Total Paid</dt>
+              <dd>֏{summaryResult.summary.totalPaidCents.toLocaleString()}</dd>
+              <dt>Outstanding</dt>
+              <dd style={{ color: summaryResult.summary.outstandingCents > 0 ? "#9f52e2" : undefined, fontWeight: 700 }}>
+                ֏{summaryResult.summary.outstandingCents.toLocaleString()}
+              </dd>
             </dl>
           </section>
         </div>

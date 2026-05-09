@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "db:migrate": "tsx src/db/runMigrations.ts"
+    "db:migrate": "tsx src/db/runMigrations.ts",
+    "test": "DATABASE_PATH=:memory: tsx --test src/__tests__/**/*.test.ts"
   },
   "keywords": [
     "fastify",
