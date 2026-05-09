@@ -75,7 +75,7 @@ export function PayWorkerPanel() {
 
       <form className="form-grid" onSubmit={handleLookup}>
         <label className="field">
-          <span>workerNumber</span>
+          <span>Worker Number</span>
           <input
             type="text"
             value={workerNumber}
@@ -115,9 +115,9 @@ export function PayWorkerPanel() {
           <section className="result-card">
             <h3>Worker</h3>
             <dl className="result-grid">
-              <dt>workerNumber</dt>
+              <dt>Worker Number</dt>
               <dd>{previewSummary.worker.workerNumber}</dd>
-              <dt>name</dt>
+              <dt>Name</dt>
               <dd>{previewSummary.worker.name}</dd>
             </dl>
           </section>
@@ -125,11 +125,11 @@ export function PayWorkerPanel() {
           <section className="result-card">
             <h3>Outstanding Balance</h3>
             <dl className="result-grid">
-              <dt>totalEarned</dt>
+              <dt>Total Earned</dt>
               <dd>{centsToDisplay(previewSummary.summary.totalEarnedCents)}</dd>
-              <dt>totalPaid</dt>
+              <dt>Total Paid</dt>
               <dd>{centsToDisplay(previewSummary.summary.totalPaidCents)}</dd>
-              <dt>outstanding</dt>
+              <dt>Outstanding</dt>
               <dd
                 style={{
                   color: previewSummary.summary.outstandingCents > 0 ? "#9f52e2" : undefined,
@@ -180,11 +180,11 @@ export function PayWorkerPanel() {
             <section className="result-card">
               <h3>Updated Summary</h3>
               <dl className="result-grid">
-                <dt>totalEarned</dt>
+                <dt>Total Earned</dt>
                 <dd>{centsToDisplay(phase.result.summary.totalEarnedCents)}</dd>
-                <dt>totalPaid</dt>
+                <dt>Total Paid</dt>
                 <dd>{centsToDisplay(phase.result.summary.totalPaidCents)}</dd>
-                <dt>outstanding</dt>
+                <dt>Outstanding</dt>
                 <dd style={{ fontWeight: 700 }}>
                   {centsToDisplay(phase.result.summary.outstandingCents)}
                 </dd>

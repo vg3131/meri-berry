@@ -8,8 +8,20 @@ export type WorkerRow = {
   created_at: string;
 };
 
+export type FruitTypeRow = {
+  id: number;
+  name: string;
+  created_at: string;
+};
+
+export type FruitTypeWithRateRow = FruitTypeRow & {
+  cents_per_kg: number | null;
+  currency_code: string | null;
+};
+
 export type RateRow = {
   id: number;
+  fruit_type_id: number | null;
   cents_per_kg: number;
   currency_code: string;
   effective_from: string;
@@ -21,6 +33,7 @@ export type WeighInInsertInput = {
   weightGrams: number;
   rateCentsPerKgSnapshot: number;
   currencyCodeSnapshot: string;
+  fruitTypeId: number;
 };
 
 export type WeighInRow = {
@@ -29,6 +42,7 @@ export type WeighInRow = {
   weight_grams: number;
   rate_cents_per_kg_snapshot: number;
   currency_code_snapshot: string;
+  fruit_type_id: number | null;
   recorded_at: string;
 };
 
@@ -87,25 +101,83 @@ export function ensureWorker(workerNumber: string): WorkerRow {
   return worker;
 }
 
+// Fruit type query functions
+const getFruitTypesStatement = db.prepare(`
+  SELECT
+    ft.id,
+    ft.name,
+    ft.created_at,
+    r.cents_per_kg,
+    r.currency_code
+  FROM fruit_types ft
+  LEFT JOIN rates r ON r.id = (
+    SELECT id FROM rates
+    WHERE fruit_type_id = ft.id
+    ORDER BY effective_from DESC, id DESC
+    LIMIT 1
+  )
+  ORDER BY ft.name ASC
+`);
+
+export function getFruitTypes(): FruitTypeWithRateRow[] {
+  return getFruitTypesStatement.all() as FruitTypeWithRateRow[];
+}
+
+const getFruitTypeByIdStatement = db.prepare(`
+  SELECT id, name, created_at FROM fruit_types WHERE id = ?
+`);
+
+export function getFruitTypeById(id: number): FruitTypeRow | undefined {
+  return getFruitTypeByIdStatement.get(id) as FruitTypeRow | undefined;
+}
+
+const insertFruitTypeStatement = db.prepare(`
+  INSERT INTO fruit_types (name) VALUES (@name)
+`);
+
+const insertRateStatement = db.prepare(`
+  INSERT INTO rates (fruit_type_id, cents_per_kg, currency_code, effective_from)
+  VALUES (@fruitTypeId, @centsPerkKg, @currencyCode, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+`);
+
+export function insertFruitType(
+  name: string,
+  centsPerkKg: number,
+  currencyCode: string,
+): FruitTypeWithRateRow {
+  const result = insertFruitTypeStatement.run({ name });
+  const fruitTypeId = Number(result.lastInsertRowid);
+
+  insertRateStatement.run({ fruitTypeId, centsPerkKg, currencyCode });
+
+  const fruitType = getFruitTypeById(fruitTypeId);
+  if (!fruitType) throw new Error("Failed to fetch inserted fruit type");
+
+  return { ...fruitType, cents_per_kg: centsPerkKg, currency_code: currencyCode };
+}
+
 // Rate query functions
 const getLatestRateStatement = db.prepare(`
-  SELECT
-    id,
-    cents_per_kg,
-    currency_code,
-    effective_from,
-    created_at
-  FROM
-    rates
-  ORDER BY
-  effective_from
-   DESC, id
-   DESC
+  SELECT id, fruit_type_id, cents_per_kg, currency_code, effective_from, created_at
+  FROM rates
+  ORDER BY effective_from DESC, id DESC
   LIMIT 1
 `);
 
 export function getLatestRate(): RateRow | undefined {
   return getLatestRateStatement.get() as RateRow | undefined;
+}
+
+const getLatestRateForFruitTypeStatement = db.prepare(`
+  SELECT id, fruit_type_id, cents_per_kg, currency_code, effective_from, created_at
+  FROM rates
+  WHERE fruit_type_id = ?
+  ORDER BY effective_from DESC, id DESC
+  LIMIT 1
+`);
+
+export function getLatestRateForFruitType(fruitTypeId: number): RateRow | undefined {
+  return getLatestRateForFruitTypeStatement.get(fruitTypeId) as RateRow | undefined;
 }
 
 // Weigh-in query functions
@@ -114,12 +186,14 @@ const insertWeighInStatement = db.prepare(`
     worker_number,
     weight_grams,
     rate_cents_per_kg_snapshot,
-    currency_code_snapshot
+    currency_code_snapshot,
+    fruit_type_id
   ) VALUES (
     @workerNumber,
     @weightGrams,
     @rateCentsPerKgSnapshot,
-    @currencyCodeSnapshot
+    @currencyCodeSnapshot,
+    @fruitTypeId
   )
 `);
 
@@ -130,6 +204,7 @@ const getWeighInByIdStatement = db.prepare(`
     weight_grams,
     rate_cents_per_kg_snapshot,
     currency_code_snapshot,
+    fruit_type_id,
     recorded_at
   FROM weigh_ins
   WHERE id = ?

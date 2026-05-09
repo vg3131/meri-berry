@@ -64,7 +64,7 @@ export function WorkerSummaryForm({ onSearchWorkerSummary }: WorkerSummaryFormPr
       <h2>Worker Summary Form</h2>
       <form className="form-grid" onSubmit={handleSearch}>
         <label className="field">
-          <span>workerNumber</span>
+          <span>Worker Number</span>
           <input
             type="text"
             value={summaryWorkerNumber}
@@ -100,13 +100,13 @@ export function WorkerSummaryForm({ onSearchWorkerSummary }: WorkerSummaryFormPr
           <section className="result-card">
             <h3>Worker</h3>
             <dl className="result-grid">
-              <dt>workerNumber</dt>
+              <dt>Worker Number</dt>
               <dd>{summaryResult.worker.workerNumber}</dd>
-              <dt>name</dt>
+              <dt>Name</dt>
               <dd>{summaryResult.worker.name}</dd>
-              <dt>active</dt>
+              <dt>Active</dt>
               <dd>{String(summaryResult.worker.active)}</dd>
-              <dt>createdAt</dt>
+              <dt>Created At</dt>
               <dd>{summaryResult.worker.createdAt}</dd>
             </dl>
           </section>
@@ -114,15 +114,15 @@ export function WorkerSummaryForm({ onSearchWorkerSummary }: WorkerSummaryFormPr
           <section className="result-card">
             <h3>Summary</h3>
             <dl className="result-grid">
-              <dt>totalWeightGrams</dt>
+              <dt>Total Weight Grams</dt>
               <dd>{summaryResult.summary.totalWeightGrams}</dd>
-              <dt>totalWeightKg</dt>
+              <dt>Total Weight Kg</dt>
               <dd>{summaryResult.summary.totalWeightKg}</dd>
-              <dt>totalEarnedCents</dt>
+              <dt>Total Earned Cents</dt>
               <dd>{summaryResult.summary.totalEarnedCents}</dd>
-              <dt>totalPaidCents</dt>
+              <dt>Total Paid Cents</dt>
               <dd>{summaryResult.summary.totalPaidCents}</dd>
-              <dt>outstandingCents</dt>
+              <dt>Outstanding Cents</dt>
               <dd>{summaryResult.summary.outstandingCents}</dd>
             </dl>
           </section>

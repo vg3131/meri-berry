@@ -1,8 +1,10 @@
 import { useState } from "react";
 import "./App.css";
 import { createWeighIn, getWorkerSummary } from "./api/farmApi";
+import { type CreateWeighInPayload } from "./api/farmApi";
 import { TopNav } from "./components/layout/TopNav";
 import { HomePanel } from "./features/home/HomePanel";
+import { ManageProducePanel } from "./features/produce/ManageProducePanel";
 import { PayWorkerPanel } from "./features/pay/PayWorkerPanel";
 import { WorkerSummaryForm } from "./features/summary/WorkerSummaryForm";
 import { WeighProductForm } from "./features/weigh/WeighProductForm";
@@ -11,8 +13,8 @@ import { type TabKey } from "./types/farm";
 function App() {
   const [activeTab, setActiveTab] = useState<TabKey>("home");
 
-  const handleRecordWeighIn = (workerNumber: string, weightKg: number) =>
-    createWeighIn({ workerNumber, weightKg });
+  const handleRecordWeighIn = (payload: CreateWeighInPayload) =>
+    createWeighIn(payload);
 
   const handleSearchWorkerSummary = (workerNumber: string) =>
     getWorkerSummary(workerNumber);
@@ -35,6 +37,7 @@ function App() {
         {activeTab === "summary" && (
           <WorkerSummaryForm onSearchWorkerSummary={handleSearchWorkerSummary} />
         )}
+        {activeTab === "produce" && <ManageProducePanel />}
       </main>
     </div>
   );

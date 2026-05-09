@@ -10,6 +10,7 @@ const navItems: Array<{ key: TabKey; label: string }> = [
   { key: "weigh", label: "Weigh Product" },
   { key: "pay", label: "Pay Worker" },
   { key: "summary", label: "Worker Summary" },
+  { key: "produce", label: "Manage Produce" },
 ];
 
 export function TopNav({ activeTab, onTabChange }: TopNavProps) {

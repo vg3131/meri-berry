@@ -2,7 +2,8 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import {
   ensureWorker,
-  getLatestRate,
+  getFruitTypeById,
+  getLatestRateForFruitType,
   getWorkerSummary,
   insertWeighIn,
 } from "../db/queries";
@@ -10,6 +11,7 @@ import {
 const createWeighInBodySchema = z.object({
   workerNumber: z.string().trim().min(1, "workerNumber is required"),
   weightKg: z.number().positive("weightKg must be greater than 0"),
+  fruitTypeId: z.number().int().positive("fruitTypeId is required"),
 });
 
 function kgToGrams(kg: number): number {
@@ -35,22 +37,28 @@ export async function weighInRoutes(app: FastifyInstance) {
       });
     }
 
-    const { workerNumber, weightKg } = parsedBody.data;
-    ensureWorker(workerNumber);
+    const { workerNumber, weightKg, fruitTypeId } = parsedBody.data;
 
-    const latestRate = getLatestRate();
-
-    if (!latestRate) {
-      return reply.code(500).send({ message: "No pay rate configured" });
+    const fruitType = getFruitTypeById(fruitTypeId);
+    if (!fruitType) {
+      return reply.code(404).send({ message: "Fruit type not found" });
     }
+
+    const rate = getLatestRateForFruitType(fruitTypeId);
+    if (!rate) {
+      return reply.code(500).send({ message: "No rate configured for this fruit type" });
+    }
+
+    ensureWorker(workerNumber);
 
     const weightGrams = kgToGrams(weightKg);
 
     const weighIn = insertWeighIn({
       workerNumber,
       weightGrams,
-      rateCentsPerKgSnapshot: latestRate.cents_per_kg,
-      currencyCodeSnapshot: latestRate.currency_code,
+      rateCentsPerKgSnapshot: rate.cents_per_kg,
+      currencyCodeSnapshot: rate.currency_code,
+      fruitTypeId,
     });
 
     const workerSummary = getWorkerSummary(workerNumber);
@@ -69,6 +77,7 @@ export async function weighInRoutes(app: FastifyInstance) {
           weighIn.rate_cents_per_kg_snapshot,
         ),
         currencyCode: weighIn.currency_code_snapshot,
+        fruitType: fruitType.name,
         recordedAt: weighIn.recorded_at,
       },
       workerSummary: {

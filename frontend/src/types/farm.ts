@@ -1,4 +1,4 @@
-export type TabKey = "home" | "weigh" | "pay" | "summary";
+export type TabKey = "home" | "weigh" | "pay" | "summary" | "produce";
 
 export type WorkerProfile = {
   workerNumber: string;
@@ -13,12 +13,21 @@ export type WorkerTotals = {
   totalPaidCents: number;
 };
 
+export type FruitType = {
+  id: number;
+  name: string;
+  centsPerkKg: number | null;
+  currencyCode: string | null;
+  createdAt: string;
+};
+
 export type WeighInResult = {
   id: number;
   workerNumber: string;
   weightKg: number;
   earnedCents: number;
   currencyCode: string;
+  fruitType: string;
   recordedAt: string;
 };
 
