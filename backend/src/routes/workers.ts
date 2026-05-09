@@ -1,13 +1,10 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { getWorker, getWorkerSummary, insertPayment } from "../db/queries";
+import { gramsToKg } from "../utils/math";
 
 type WorkerParams = {
   workerNumber: string;
 };
-
-function gramsToKg(grams: number): number {
-  return Number((grams / 1000).toFixed(3));
-}
 
 async function sendWorkerSummary(
   request: FastifyRequest<{ Params: WorkerParams }>,

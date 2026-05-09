@@ -7,24 +7,13 @@ import {
   getWorkerSummary,
   insertWeighIn,
 } from "../db/queries";
+import { gramsToKg, kgToGrams, calculateEarnedAmd } from "../utils/math";
 
 const createWeighInBodySchema = z.object({
   workerNumber: z.string().trim().min(1, "workerNumber is required"),
   weightKg: z.number().positive("weightKg must be greater than 0"),
   fruitTypeId: z.number().int().positive("fruitTypeId is required"),
 });
-
-function kgToGrams(kg: number): number {
-  return Math.round(kg * 1000);
-}
-
-function gramsToKg(grams: number): number {
-  return Number((grams / 1000).toFixed(3));
-}
-
-function calculateEarnedCentsForGrams(grams: number, rateCentsPerKg: number): number {
-  return Math.round((grams / 1000) * rateCentsPerKg);
-}
 
 export async function weighInRoutes(app: FastifyInstance) {
   app.post("/weigh-ins", async (request, reply) => {
@@ -72,7 +61,7 @@ export async function weighInRoutes(app: FastifyInstance) {
         id: weighIn.id,
         workerNumber: weighIn.worker_number,
         weightKg: gramsToKg(weighIn.weight_grams),
-        earnedCents: calculateEarnedCentsForGrams(
+        earnedCents: calculateEarnedAmd(
           weighIn.weight_grams,
           weighIn.rate_cents_per_kg_snapshot,
         ),
