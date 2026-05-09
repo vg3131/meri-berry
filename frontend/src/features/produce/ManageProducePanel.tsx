@@ -29,7 +29,24 @@ export function ManageProducePanel() {
   };
 
   useEffect(() => {
-    loadFruitTypes();
+    let isCancelled = false;
+
+    getFruitTypes()
+      .then((types) => {
+        if (!isCancelled) {
+          setFruitTypes(types);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
