@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { getWorker, getWorkerSummary } from "../db/queries";
+import { getWorker, getWorkerSummary, getLatestRate, insertPayment } from "../db/queries";
 
 type WorkerParams = {
   workerNumber: string;
@@ -40,7 +40,55 @@ async function sendWorkerSummary(
   };
 }
 
+async function payWorker(
+  request: FastifyRequest<{ Params: WorkerParams }>,
+  reply: FastifyReply,
+) {
+  const { workerNumber } = request.params;
+  const worker = getWorker(workerNumber);
+
+  if (!worker) {
+    return reply.code(404).send({ message: "Worker not found" });
+  }
+
+  const summary = getWorkerSummary(workerNumber);
+  const outstandingCents = Math.max(summary.totalEarnedCents - summary.totalPaidCents, 0);
+
+  if (outstandingCents === 0) {
+    return reply.code(422).send({ message: "Worker has no outstanding balance to pay" });
+  }
+
+  const latestRate = getLatestRate();
+  const currencyCode = latestRate?.currency_code ?? "AUD";
+
+  insertPayment({
+    workerNumber,
+    amountCents: outstandingCents,
+    currencyCodeSnapshot: currencyCode,
+  });
+
+  const updatedSummary = getWorkerSummary(workerNumber);
+
+  return reply.code(201).send({
+    payment: {
+      workerNumber,
+      amountCents: outstandingCents,
+    },
+    summary: {
+      totalWeightGrams: updatedSummary.totalWeightGrams,
+      totalWeightKg: gramsToKg(updatedSummary.totalWeightGrams),
+      totalEarnedCents: updatedSummary.totalEarnedCents,
+      totalPaidCents: updatedSummary.totalPaidCents,
+      outstandingCents: Math.max(
+        updatedSummary.totalEarnedCents - updatedSummary.totalPaidCents,
+        0,
+      ),
+    },
+  });
+}
+
 export async function workerRoutes(app: FastifyInstance) {
   app.get<{ Params: WorkerParams }>("/workers/:workerNumber", sendWorkerSummary);
   app.get<{ Params: WorkerParams }>("/workers/:workerNumber/summary", sendWorkerSummary);
+  app.post<{ Params: WorkerParams }>("/workers/:workerNumber/payments", payWorker);
 }

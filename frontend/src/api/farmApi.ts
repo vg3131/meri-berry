@@ -2,6 +2,7 @@ import { apiRequest } from "./api";
 import {
   type CreateWeighInResponse,
   type WorkerSummaryResponse,
+  type PayWorkerResponse,
 } from "../types/farm";
 
 export type CreateWeighInPayload = {
@@ -21,5 +22,12 @@ export function getWorkerSummary(workerNumber: string) {
   return apiRequest<WorkerSummaryResponse>({
     method: "GET",
     path: `/api/workers/${encodeURIComponent(workerNumber)}/summary`,
+  });
+}
+
+export function payWorker(workerNumber: string) {
+  return apiRequest<PayWorkerResponse>({
+    method: "POST",
+    path: `/api/workers/${encodeURIComponent(workerNumber)}/payments`,
   });
 }
