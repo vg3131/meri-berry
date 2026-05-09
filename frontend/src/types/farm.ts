@@ -44,3 +44,19 @@ export type WorkerSummaryResponse = {
 
 export type WorkerSummaryView = WorkerSummaryResponse;
 export type CreateWeighInResponse = WeighInSubmissionResult;
+
+export type WorkerPaymentSummary = {
+  totalWeightGrams: number;
+  totalWeightKg: number;
+  totalEarnedCents: number;
+  totalPaidCents: number;
+  outstandingCents: number;
+};
+
+export type PayWorkerResponse = {
+  payment: {
+    workerNumber: string;
+    amountCents: number;
+  };
+  summary: WorkerPaymentSummary;
+};
