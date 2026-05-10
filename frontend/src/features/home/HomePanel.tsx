@@ -138,7 +138,7 @@ export function HomePanel() {
   };
 
   const handleExport = async () => {
-    const { from, to, label } = dateRangeForPeriod(activePeriod);
+    const { from, to } = dateRangeForPeriod(activePeriod);
     const filename = from === to ? `daily-${from}.csv` : `export-${from}-to-${to}.csv`;
     setIsExporting(true);
     try {
