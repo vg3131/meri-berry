@@ -78,6 +78,9 @@ export function getHomeStats() {
   });
 }
 
-export function getDailyCsvUrl(date: string): string {
-  return `/api/reports/daily.csv?date=${encodeURIComponent(date)}`;
+export function getCsvUrl(from: string, to: string): string {
+  if (from === to) {
+    return `/api/reports/daily.csv?date=${encodeURIComponent(from)}`;
+  }
+  return `/api/reports/daily.csv?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
 }
