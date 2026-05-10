@@ -78,9 +78,30 @@ export function getHomeStats() {
   });
 }
 
-export function getCsvUrl(from: string, to: string): string {
+function csvPath(from: string, to: string): string {
   if (from === to) {
     return `/api/reports/daily.csv?date=${encodeURIComponent(from)}`;
   }
   return `/api/reports/daily.csv?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+}
+
+/**
+ * Fetch CSV via the fetch API (not a navigation link) so Vite's dev proxy
+ * handles it correctly, then trigger a browser download via a Blob URL.
+ */
+export async function downloadCsv(from: string, to: string, filename: string): Promise<void> {
+  const res = await fetch(csvPath(from, to));
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`CSV export failed (${res.status}): ${body}`);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

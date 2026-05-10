@@ -9,7 +9,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { getHomeStats, getCsvUrl } from "../../api/farmApi";
+import { getHomeStats, downloadCsv } from "../../api/farmApi";
 import { type HomeStatsResponse, type PeriodStats } from "../../types/farm";
 
 type Period = "daily" | "weekly" | "monthly";
@@ -111,6 +111,7 @@ export function HomePanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activePeriod, setActivePeriod] = useState<Period>("daily");
+  const [isExporting, setIsExporting] = useState(false);
 
   // Compute date-range boundaries for the active period
   const dateRangeForPeriod = (period: Period): { from: string; to: string; label: string } => {
@@ -134,6 +135,19 @@ export function HomePanel() {
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
     const from = monthStart.toISOString().slice(0, 10);
     return { from, to: todayStr, label: "Export This Month's CSV" };
+  };
+
+  const handleExport = async () => {
+    const { from, to, label } = dateRangeForPeriod(activePeriod);
+    const filename = from === to ? `daily-${from}.csv` : `export-${from}-to-${to}.csv`;
+    setIsExporting(true);
+    try {
+      await downloadCsv(from, to, filename);
+    } catch {
+      setError(`CSV export failed. Check that the backend is running.`);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const load = () => {
@@ -172,19 +186,15 @@ export function HomePanel() {
       >
         <h2 style={{ margin: 0 }}>Farm Overview</h2>
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          {(() => {
-            const { from, to, label } = dateRangeForPeriod(activePeriod);
-            return (
-              <a
-                href={getCsvUrl(from, to)}
-                className="btn btn-secondary"
-                style={{ textDecoration: "none", fontSize: "0.85rem" }}
-                download
-              >
-                {label}
-              </a>
-            );
-          })()}
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ fontSize: "0.85rem" }}
+            onClick={handleExport}
+            disabled={isExporting}
+          >
+            {isExporting ? "Exporting…" : dateRangeForPeriod(activePeriod).label}
+          </button>
           <button
             type="button"
             className="btn btn-secondary"
