@@ -1,4 +1,4 @@
-export type TabKey = "home" | "weigh" | "pay" | "summary" | "produce";
+export type TabKey = "home" | "weigh" | "pay" | "summary" | "produce" | "ledger" | "outstanding";
 
 export type WorkerProfile = {
   workerNumber: string;
@@ -25,7 +25,6 @@ export type WeighInResult = {
   workerNumber: string;
   weightKg: number;
   earnedCents: number;
-  currencyCode: string;
   fruitType: string;
   recordedAt: string;
 };
@@ -67,4 +66,61 @@ export type PayWorkerResponse = {
     amountCents: number;
   };
   summary: WorkerPaymentSummary;
+};
+
+// Ledger types
+export type LedgerEntry = {
+  type: "weigh_in" | "payment";
+  id: number;
+  occurredAt: string;
+  amountCents: number;
+  fruitTypeName: string | null;
+  weightGrams: number | null;
+  note: string | null;
+  runningOutstandingCents: number;
+};
+
+export type WorkerLedgerResponse = {
+  worker: {
+    workerNumber: string;
+    name: string;
+    active: boolean;
+  };
+  ledger: LedgerEntry[];
+};
+
+// Outstanding workers types
+export type OutstandingWorker = {
+  workerNumber: string;
+  name: string;
+  totalWeightGrams: number;
+  totalWeightKg: number;
+  totalEarnedCents: number;
+  totalPaidCents: number;
+  outstandingCents: number;
+};
+
+export type OutstandingWorkersResponse = {
+  workers: OutstandingWorker[];
+};
+
+// Home stats types
+export type FruitTypeStat = {
+  fruitType: string;
+  weightKg: number;
+  earnedAmd: number;
+  weighInCount: number;
+};
+
+export type PeriodStats = {
+  totalWeightKg: number;
+  totalEarnedAmd: number;
+  weighInCount: number;
+  byFruitType: FruitTypeStat[];
+};
+
+export type HomeStatsResponse = {
+  daily: PeriodStats;
+  weekly: PeriodStats;
+  monthly: PeriodStats;
 };

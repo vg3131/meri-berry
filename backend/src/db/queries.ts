@@ -225,3 +225,159 @@ export function getWorkerSummary(workerNumber: string): WorkerSummaryRow {
     workerNumber,
   ) as WorkerSummaryRow;
 }
+
+// Ledger query functions
+export type LedgerRow = {
+  type: "weigh_in" | "payment";
+  id: number;
+  occurredAt: string;
+  amountCents: number;
+  fruitTypeName: string | null;
+  weightGrams: number | null;
+  note: string | null;
+};
+
+const getWorkerLedgerStatement = db.prepare(`
+  SELECT
+    'weigh_in' AS type,
+    wi.id,
+    wi.recorded_at AS occurredAt,
+    CAST(ROUND((wi.weight_grams / 1000.0) * wi.rate_cents_per_kg_snapshot) AS INTEGER) AS amountCents,
+    ft.name AS fruitTypeName,
+    wi.weight_grams AS weightGrams,
+    NULL AS note
+  FROM weigh_ins wi
+  LEFT JOIN fruit_types ft ON ft.id = wi.fruit_type_id
+  WHERE wi.worker_number = ?
+
+  UNION ALL
+
+  SELECT
+    'payment' AS type,
+    p.id,
+    p.recorded_at AS occurredAt,
+    p.amount_cents AS amountCents,
+    NULL AS fruitTypeName,
+    NULL AS weightGrams,
+    p.note
+  FROM payments p
+  WHERE p.worker_number = ?
+
+  ORDER BY occurredAt ASC, id ASC
+`);
+
+export function getWorkerLedger(workerNumber: string): LedgerRow[] {
+  return getWorkerLedgerStatement.all(workerNumber, workerNumber) as LedgerRow[];
+}
+
+// Outstanding workers query functions
+export type OutstandingWorkerRow = {
+  workerNumber: string;
+  name: string;
+  totalWeightGrams: number;
+  totalEarnedCents: number;
+  totalPaidCents: number;
+  outstandingCents: number;
+};
+
+const getAllWorkersOutstandingStatement = db.prepare(`
+  SELECT
+    w.worker_number AS workerNumber,
+    w.name,
+    COALESCE((
+      SELECT SUM(weight_grams)
+      FROM weigh_ins
+      WHERE worker_number = w.worker_number
+    ), 0) AS totalWeightGrams,
+    COALESCE((
+      SELECT SUM(CAST(ROUND((weight_grams / 1000.0) * rate_cents_per_kg_snapshot) AS INTEGER))
+      FROM weigh_ins
+      WHERE worker_number = w.worker_number
+    ), 0) AS totalEarnedCents,
+    COALESCE((
+      SELECT SUM(amount_cents)
+      FROM payments
+      WHERE worker_number = w.worker_number
+    ), 0) AS totalPaidCents,
+    COALESCE((
+      SELECT SUM(CAST(ROUND((weight_grams / 1000.0) * rate_cents_per_kg_snapshot) AS INTEGER))
+      FROM weigh_ins
+      WHERE worker_number = w.worker_number
+    ), 0) - COALESCE((
+      SELECT SUM(amount_cents)
+      FROM payments
+      WHERE worker_number = w.worker_number
+    ), 0) AS outstandingCents
+  FROM workers w
+  WHERE w.active = 1
+    AND COALESCE((
+      SELECT SUM(CAST(ROUND((weight_grams / 1000.0) * rate_cents_per_kg_snapshot) AS INTEGER))
+      FROM weigh_ins
+      WHERE worker_number = w.worker_number
+    ), 0) > COALESCE((
+      SELECT SUM(amount_cents)
+      FROM payments
+      WHERE worker_number = w.worker_number
+    ), 0)
+  ORDER BY outstandingCents DESC
+`);
+
+export function getAllWorkersOutstanding(): OutstandingWorkerRow[] {
+  return getAllWorkersOutstandingStatement.all() as OutstandingWorkerRow[];
+}
+
+// Home stats query functions
+export type HomeStatsRow = {
+  fruitTypeName: string;
+  totalWeightGrams: number;
+  totalEarnedCents: number;
+  weighInCount: number;
+};
+
+const getHomeStatsStatement = db.prepare(`
+  SELECT
+    COALESCE(ft.name, 'Unknown') AS fruitTypeName,
+    SUM(wi.weight_grams) AS totalWeightGrams,
+    SUM(CAST(ROUND((wi.weight_grams / 1000.0) * wi.rate_cents_per_kg_snapshot) AS INTEGER)) AS totalEarnedCents,
+    COUNT(*) AS weighInCount
+  FROM weigh_ins wi
+  LEFT JOIN fruit_types ft ON ft.id = wi.fruit_type_id
+  WHERE wi.recorded_at >= ?
+    AND wi.recorded_at < ?
+  GROUP BY wi.fruit_type_id, ft.name
+  ORDER BY totalEarnedCents DESC
+`);
+
+export function getHomeStats(fromIso: string, toIso: string): HomeStatsRow[] {
+  return getHomeStatsStatement.all(fromIso, toIso) as HomeStatsRow[];
+}
+
+// Daily CSV query functions
+export type DailyWeighInRow = {
+  workerNumber: string;
+  workerName: string;
+  fruitTypeName: string | null;
+  weightGrams: number;
+  earnedCents: number;
+  recordedAt: string;
+};
+
+const getDailyWeighInsStatement = db.prepare(`
+  SELECT
+    wi.worker_number AS workerNumber,
+    w.name AS workerName,
+    COALESCE(ft.name, 'Unknown') AS fruitTypeName,
+    wi.weight_grams AS weightGrams,
+    CAST(ROUND((wi.weight_grams / 1000.0) * wi.rate_cents_per_kg_snapshot) AS INTEGER) AS earnedCents,
+    wi.recorded_at AS recordedAt
+  FROM weigh_ins wi
+  LEFT JOIN workers w ON w.worker_number = wi.worker_number
+  LEFT JOIN fruit_types ft ON ft.id = wi.fruit_type_id
+  WHERE wi.recorded_at >= ?
+    AND wi.recorded_at < ?
+  ORDER BY wi.recorded_at ASC
+`);
+
+export function getDailyWeighIns(fromIso: string, toIso: string): DailyWeighInRow[] {
+  return getDailyWeighInsStatement.all(fromIso, toIso) as DailyWeighInRow[];
+}

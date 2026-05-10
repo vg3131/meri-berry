@@ -8,6 +8,8 @@ import { ManageProducePanel } from "./features/produce/ManageProducePanel";
 import { PayWorkerPanel } from "./features/pay/PayWorkerPanel";
 import { WorkerSummaryForm } from "./features/summary/WorkerSummaryForm";
 import { WeighProductForm } from "./features/weigh/WeighProductForm";
+import { WorkerLedgerPanel } from "./features/ledger/WorkerLedgerPanel";
+import { OutstandingPanel } from "./features/outstanding/OutstandingPanel";
 import { type TabKey } from "./types/farm";
 
 function App() {
@@ -37,6 +39,8 @@ function App() {
         {activeTab === "summary" && (
           <WorkerSummaryForm onSearchWorkerSummary={handleSearchWorkerSummary} />
         )}
+        {activeTab === "ledger" && <WorkerLedgerPanel />}
+        {activeTab === "outstanding" && <OutstandingPanel />}
         {activeTab === "produce" && <ManageProducePanel />}
       </main>
     </div>

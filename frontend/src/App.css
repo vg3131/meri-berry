@@ -5,7 +5,7 @@
 
 .top-nav {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   border-top: 1px solid #d8d8df;
   border-bottom: 1px solid #d8d8df;
   background: #f3f3f6;
@@ -103,6 +103,36 @@
   outline-offset: 0;
 }
 
+.field select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid #c8ccda;
+  background: #ffffff;
+  color: #283143;
+  border-radius: 0.5rem;
+  padding: 0.65rem 2.2rem 0.65rem 0.75rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239f52e2' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+}
+
+.field select:focus {
+  border-color: #9f52e2;
+  outline: 2px solid rgba(159, 82, 226, 0.18);
+  outline-offset: 0;
+}
+
+.field select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.field select option {
+  color: #283143;
+}
+
 .button-row {
   grid-column: 1 / -1;
   display: flex;
@@ -190,6 +220,52 @@
   font-size: 0.84rem;
   text-align: right;
   word-break: break-word;
+}
+
+/* Ledger / Outstanding table */
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.ledger-table th {
+  background: #eeeef3;
+  color: #424b5a;
+  font-weight: 700;
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  border-bottom: 2px solid #d8d8df;
+  white-space: nowrap;
+}
+
+.ledger-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #e8e8ed;
+  color: #2f394b;
+  vertical-align: middle;
+}
+
+.ledger-table .row-even td {
+  background: #f9f9fc;
+}
+
+.ledger-badge {
+  display: inline-block;
+  border-radius: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.badge-weigh {
+  background: #edf7f1;
+  color: #1e6a3a;
+}
+
+.badge-payment {
+  background: #fff1f1;
+  color: #8c2d33;
 }
 
 @media (max-width: 860px) {
