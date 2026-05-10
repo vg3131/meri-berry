@@ -1,0 +1,12 @@
+**/node_modules
+**/dist
+**/.git
+**/.env
+**/coverage
+
+# SQLite data files — persisted via Docker volume, not baked into image
+backend/data
+
+# Dev-only
+.github
+**/tsconfig.tsbuildinfo
