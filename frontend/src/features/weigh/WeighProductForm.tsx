@@ -176,14 +176,14 @@ export function WeighProductForm({ onRecordWeighIn }: WeighProductFormProps) {
           <section className="result-card">
             <h3>Updated Summary</h3>
             <dl className="result-grid">
-              <dt>Total Weight (g)</dt>
-              <dd>{lastResult.workerSummary.totalWeightGrams}</dd>
+              <dt>Total Weight (kg)</dt>
+              <dd>{(lastResult.workerSummary.totalWeightGrams / 1000).toFixed(3)}</dd>
               <dt>Total Earned</dt>
-              <dd>{lastResult.workerSummary.totalEarnedCents}</dd>
+              <dd>֏{lastResult.workerSummary.totalEarnedCents.toLocaleString()}</dd>
               <dt>Total Paid</dt>
-              <dd>{lastResult.workerSummary.totalPaidCents}</dd>
+              <dd>֏{lastResult.workerSummary.totalPaidCents.toLocaleString()}</dd>
               <dt>Outstanding</dt>
-              <dd>{lastResult.workerSummary.outstandingCents}</dd>
+              <dd>֏{lastResult.workerSummary.outstandingCents.toLocaleString()}</dd>
             </dl>
           </section>
         </div>

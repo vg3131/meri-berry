@@ -2,15 +2,16 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { getDailyWeighIns, getHomeStats } from "../db/queries";
 import { gramsToKg } from "../utils/math";
 
-type DailyCsvQuery = {
+type CsvQuery = {
   date?: string;
+  from?: string;
+  to?: string;
 };
 
-function isoDateFromParam(dateStr: string | undefined): string | null {
-  if (!dateStr) return null;
-  // Expect YYYY-MM-DD
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null;
-  return dateStr;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function isValidDate(s: string | undefined): s is string {
+  return typeof s === "string" && DATE_RE.test(s);
 }
 
 function startOfDayIso(date: string): string {
@@ -22,24 +23,40 @@ function endOfDayIso(date: string): string {
 }
 
 async function sendDailyCsv(
-  request: FastifyRequest<{ Querystring: DailyCsvQuery }>,
+  request: FastifyRequest<{ Querystring: CsvQuery }>,
   reply: FastifyReply,
 ) {
-  const dateParam = request.query.date;
-  const date = isoDateFromParam(dateParam);
+  const { date, from, to } = request.query;
 
-  if (!date) {
-    return reply.code(400).send({ message: "Missing or invalid date param. Use ?date=YYYY-MM-DD" });
+  let fromIso: string;
+  let toIso: string;
+  let filename: string;
+
+  if (isValidDate(date)) {
+    // Single-day mode: ?date=YYYY-MM-DD
+    fromIso = startOfDayIso(date);
+    toIso = endOfDayIso(date);
+    filename = `daily-${date}.csv`;
+  } else if (isValidDate(from) && isValidDate(to)) {
+    // Range mode: ?from=YYYY-MM-DD&to=YYYY-MM-DD (inclusive)
+    fromIso = startOfDayIso(from);
+    toIso = endOfDayIso(to);
+    filename = `export-${from}-to-${to}.csv`;
+  } else {
+    return reply.code(400).send({
+      message: "Provide either ?date=YYYY-MM-DD or ?from=YYYY-MM-DD&to=YYYY-MM-DD",
+    });
   }
 
-  const rows = getDailyWeighIns(startOfDayIso(date), endOfDayIso(date));
+  const rows = getDailyWeighIns(fromIso, toIso);
 
   const header = "date,workerNumber,workerName,fruitType,weightKg,earnedAmd";
   const lines = rows.map((r) => {
     const kg = gramsToKg(r.weightGrams).toFixed(3);
+    const rowDate = r.recordedAt.slice(0, 10);
     const fruitType = (r.fruitTypeName ?? "Unknown").replace(/,/g, ";");
     const name = r.workerName.replace(/,/g, ";");
-    return `${date},${r.workerNumber},${name},${fruitType},${kg},${r.earnedCents}`;
+    return `${rowDate},${r.workerNumber},${name},${fruitType},${kg},${r.earnedCents}`;
   });
 
   const csv = [header, ...lines].join("\n");
@@ -47,7 +64,7 @@ async function sendDailyCsv(
   return reply
     .code(200)
     .header("Content-Type", "text/csv; charset=utf-8")
-    .header("Content-Disposition", `attachment; filename="daily-${date}.csv"`)
+    .header("Content-Disposition", `attachment; filename="${filename}"`)
     .send(csv);
 }
 
@@ -107,6 +124,6 @@ async function sendHomeStats(
 }
 
 export async function reportRoutes(app: FastifyInstance) {
-  app.get<{ Querystring: DailyCsvQuery }>("/reports/daily.csv", sendDailyCsv);
+  app.get<{ Querystring: CsvQuery }>("/reports/daily.csv", sendDailyCsv);
   app.get<{ Querystring: HomeStatsQuery }>("/reports/home-stats", sendHomeStats);
 }

@@ -121,7 +121,7 @@ async function sendAllWorkersOutstanding(_request: FastifyRequest, _reply: Fasti
       totalWeightKg: gramsToKg(r.totalWeightGrams),
       totalEarnedCents: r.totalEarnedCents,
       totalPaidCents: r.totalPaidCents,
-      outstandingCents: r.outstandingCents,
+      outstandingCents: Math.max(r.outstandingCents, 0),
     })),
   };
 }
