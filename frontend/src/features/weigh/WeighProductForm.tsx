@@ -111,8 +111,9 @@ export function WeighProductForm({ onRecordWeighIn }: WeighProductFormProps) {
             onChange={(e) => setWeighForm({ ...weighForm, fruitTypeId: e.target.value })}
             required
             disabled={isSubmitting}
+            style={{ color: weighForm.fruitTypeId === "" ? "#8a93a6" : "#283143" }}
           >
-            <option value="">Select a fruit type…</option>
+            <option value="" disabled>Select a fruit type…</option>
             {fruitTypes.map((ft) => (
               <option key={ft.id} value={ft.id}>
                 {ft.name}
@@ -166,9 +167,7 @@ export function WeighProductForm({ onRecordWeighIn }: WeighProductFormProps) {
               <dt>Weight (kg)</dt>
               <dd>{lastResult.weighIn.weightKg}</dd>
               <dt>Earned</dt>
-              <dd>{lastResult.weighIn.earnedCents}</dd>
-              <dt>Currency</dt>
-              <dd>{lastResult.weighIn.currencyCode}</dd>
+              <dd>֏{lastResult.weighIn.earnedCents.toLocaleString()}</dd>
               <dt>Recorded At</dt>
               <dd>{lastResult.weighIn.recordedAt}</dd>
             </dl>

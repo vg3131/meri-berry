@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import { weighInRoutes } from "./routes/weighIns";
 import { workerRoutes } from "./routes/workers";
 import { fruitTypeRoutes } from "./routes/fruitTypes";
+import { reportRoutes } from "./routes/reports";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 
@@ -22,6 +23,7 @@ export function buildApp() {
   app.register(weighInRoutes, { prefix: "/api" });
   app.register(workerRoutes, { prefix: "/api" });
   app.register(fruitTypeRoutes, { prefix: "/api" });
+  app.register(reportRoutes, { prefix: "/api" });
 
   return app;
 }

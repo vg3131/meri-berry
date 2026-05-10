@@ -65,7 +65,6 @@ export async function weighInRoutes(app: FastifyInstance) {
           weighIn.weight_grams,
           weighIn.rate_cents_per_kg_snapshot,
         ),
-        currencyCode: weighIn.currency_code_snapshot,
         fruitType: fruitType.name,
         recordedAt: weighIn.recorded_at,
       },

@@ -154,5 +154,160 @@ describe("Meri Berry API", () => {
       });
       assert.strictEqual(res.statusCode, 400);
     });
+
+    it("creates a weigh-in and returns 201 with worker summary", async () => {
+      // Create a fruit type first
+      const ftRes = await app.inject({
+        method: "POST",
+        url: "/api/fruit-types",
+        payload: { name: "Raspberry", amdPerKg: 600 },
+      });
+      const fruitTypeId = JSON.parse(ftRes.body).id;
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/weigh-ins",
+        payload: { workerNumber: "201", weightKg: 5, fruitTypeId },
+      });
+      assert.strictEqual(res.statusCode, 201);
+      const body = JSON.parse(res.body);
+      assert.ok(body.weighIn);
+      assert.strictEqual(body.weighIn.workerNumber, "201");
+      assert.strictEqual(body.weighIn.weightKg, 5);
+      assert.ok(typeof body.weighIn.earnedCents === "number");
+      assert.ok(body.workerSummary);
+    });
+  });
+
+  // ── Worker Ledger ─────────────────────────────────────────────────────────
+
+  describe("GET /api/workers/:workerNumber/ledger", () => {
+    it("returns 404 for an unknown worker", async () => {
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/workers/88888/ledger",
+      });
+      assert.strictEqual(res.statusCode, 404);
+    });
+
+    it("returns ledger with transactions after a weigh-in", async () => {
+      // Worker 201 was created by the weigh-in test above
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/workers/201/ledger",
+      });
+      assert.strictEqual(res.statusCode, 200);
+      const body = JSON.parse(res.body);
+      assert.ok(body.worker);
+      assert.strictEqual(body.worker.workerNumber, "201");
+      assert.ok(Array.isArray(body.ledger));
+      assert.ok(body.ledger.length >= 1);
+      const first = body.ledger[0];
+      assert.strictEqual(first.type, "weigh_in");
+      assert.ok(typeof first.runningOutstandingCents === "number");
+      assert.ok(first.runningOutstandingCents > 0);
+    });
+
+    it("running balance decreases after payment", async () => {
+      // Pay worker 201
+      await app.inject({ method: "POST", url: "/api/workers/201/payments" });
+
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/workers/201/ledger",
+      });
+      const body = JSON.parse(res.body);
+      const last = body.ledger[body.ledger.length - 1];
+      assert.strictEqual(last.type, "payment");
+      assert.strictEqual(last.runningOutstandingCents, 0);
+    });
+  });
+
+  // ── Outstanding Workers ───────────────────────────────────────────────────
+
+  describe("GET /api/workers/outstanding", () => {
+    it("returns an array", async () => {
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/workers/outstanding",
+      });
+      assert.strictEqual(res.statusCode, 200);
+      const body = JSON.parse(res.body);
+      assert.ok(Array.isArray(body.workers));
+    });
+
+    it("includes a worker with unpaid balance", async () => {
+      // Create a new fruit type and weigh-in for worker 301 (no payment)
+      const ftRes = await app.inject({
+        method: "POST",
+        url: "/api/fruit-types",
+        payload: { name: "Gooseberry", amdPerKg: 450 },
+      });
+      const fruitTypeId = JSON.parse(ftRes.body).id;
+
+      await app.inject({
+        method: "POST",
+        url: "/api/weigh-ins",
+        payload: { workerNumber: "301", weightKg: 3, fruitTypeId },
+      });
+
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/workers/outstanding",
+      });
+      const body = JSON.parse(res.body);
+      const worker301 = body.workers.find(
+        (w: { workerNumber: string }) => w.workerNumber === "301",
+      );
+      assert.ok(worker301, "worker 301 should appear in outstanding list");
+      assert.ok(worker301.outstandingCents > 0);
+    });
+  });
+
+  // ── Reports ───────────────────────────────────────────────────────────────
+
+  describe("GET /api/reports/daily.csv", () => {
+    it("returns 400 for missing date", async () => {
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/reports/daily.csv",
+      });
+      assert.strictEqual(res.statusCode, 400);
+    });
+
+    it("returns 400 for invalid date format", async () => {
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/reports/daily.csv?date=not-a-date",
+      });
+      assert.strictEqual(res.statusCode, 400);
+    });
+
+    it("returns CSV content for a valid date", async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const res = await app.inject({
+        method: "GET",
+        url: `/api/reports/daily.csv?date=${today}`,
+      });
+      assert.strictEqual(res.statusCode, 200);
+      assert.ok(res.headers["content-type"]?.toString().includes("text/csv"));
+      assert.ok(res.body.startsWith("date,workerNumber"));
+    });
+  });
+
+  describe("GET /api/reports/home-stats", () => {
+    it("returns daily, weekly, monthly stats", async () => {
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/reports/home-stats",
+      });
+      assert.strictEqual(res.statusCode, 200);
+      const body = JSON.parse(res.body);
+      assert.ok(body.daily);
+      assert.ok(body.weekly);
+      assert.ok(body.monthly);
+      assert.ok(typeof body.daily.totalWeightKg === "number");
+      assert.ok(Array.isArray(body.daily.byFruitType));
+    });
   });
 });

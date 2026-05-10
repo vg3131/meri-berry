@@ -4,6 +4,9 @@ import {
   type FruitType,
   type WorkerSummaryResponse,
   type PayWorkerResponse,
+  type WorkerLedgerResponse,
+  type OutstandingWorkersResponse,
+  type HomeStatsResponse,
 } from "../types/farm";
 
 export type CreateWeighInPayload = {
@@ -52,4 +55,29 @@ export function createFruitType(payload: CreateFruitTypePayload) {
     path: "/api/fruit-types",
     payload,
   });
+}
+
+export function getWorkerLedger(workerNumber: string) {
+  return apiRequest<WorkerLedgerResponse>({
+    method: "GET",
+    path: `/api/workers/${encodeURIComponent(workerNumber)}/ledger`,
+  });
+}
+
+export function getWorkersOutstanding() {
+  return apiRequest<OutstandingWorkersResponse>({
+    method: "GET",
+    path: "/api/workers/outstanding",
+  });
+}
+
+export function getHomeStats() {
+  return apiRequest<HomeStatsResponse>({
+    method: "GET",
+    path: "/api/reports/home-stats",
+  });
+}
+
+export function getDailyCsvUrl(date: string): string {
+  return `/api/reports/daily.csv?date=${encodeURIComponent(date)}`;
 }
