@@ -12,27 +12,25 @@ export function OutstandingPanel() {
   const [error, setError] = useState<string | null>(null);
   const [payingWorker, setPayingWorker] = useState<string | null>(null);
   const [paySuccess, setPaySuccess] = useState<string | null>(null);
-
-  const load = () => {
-    setIsLoading(true);
-    setError(null);
-    getWorkersOutstanding()
-      .then((res) => setWorkers(res.workers))
-      .catch(() => setError("Failed to load outstanding workers."))
-      .finally(() => setIsLoading(false));
-  };
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    load();
-  }, []);
+    let cancelled = false;
+    getWorkersOutstanding()
+      .then((res) => { if (!cancelled) { setWorkers(res.workers); setIsLoading(false); } })
+      .catch(() => { if (!cancelled) { setError("Failed to load outstanding workers."); setIsLoading(false); } });
+    return () => { cancelled = true; };
+  }, [refreshKey]);
 
   const handlePay = async (workerNumber: string, name: string) => {
     setPayingWorker(workerNumber);
     setPaySuccess(null);
+    setError(null);
     try {
       await payWorker(workerNumber);
       setPaySuccess(`Paid ${name} successfully.`);
-      load();
+      setIsLoading(true);
+      setRefreshKey((k) => k + 1);
     } catch {
       setError(`Failed to pay worker ${workerNumber}.`);
     } finally {
@@ -47,7 +45,7 @@ export function OutstandingPanel() {
         <button
           type="button"
           className="btn btn-secondary"
-          onClick={load}
+          onClick={() => { setIsLoading(true); setError(null); setRefreshKey((k) => k + 1); }}
           disabled={isLoading}
         >
           {isLoading ? "Refreshing…" : "Refresh"}

@@ -112,6 +112,7 @@ export function HomePanel() {
   const [error, setError] = useState<string | null>(null);
   const [activePeriod, setActivePeriod] = useState<Period>("daily");
   const [isExporting, setIsExporting] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Compute date-range boundaries for the active period
   const dateRangeForPeriod = (period: Period): { from: string; to: string; label: string } => {
@@ -150,18 +151,13 @@ export function HomePanel() {
     }
   };
 
-  const load = () => {
-    setIsLoading(true);
-    setError(null);
-    getHomeStats()
-      .then(setStats)
-      .catch(() => setError("Failed to load stats."))
-      .finally(() => setIsLoading(false));
-  };
-
   useEffect(() => {
-    load();
-  }, []);
+    let cancelled = false;
+    getHomeStats()
+      .then((data) => { if (!cancelled) { setStats(data); setIsLoading(false); } })
+      .catch(() => { if (!cancelled) { setError("Failed to load stats."); setIsLoading(false); } });
+    return () => { cancelled = true; };
+  }, [refreshKey]);
 
   const periods: Array<{ key: Period; label: string }> = [
     { key: "daily", label: "Today" },
@@ -199,7 +195,7 @@ export function HomePanel() {
             type="button"
             className="btn btn-secondary"
             style={{ fontSize: "0.85rem" }}
-            onClick={load}
+            onClick={() => { setIsLoading(true); setError(null); setRefreshKey((k) => k + 1); }}
             disabled={isLoading}
           >
             {isLoading ? "Loading…" : "Refresh"}
